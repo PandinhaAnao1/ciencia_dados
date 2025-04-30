@@ -1,12 +1,14 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-
+import seaborn as sns
+import matplotlib.pyplot as plt
+import numpy as np
 
 def carregar_dados():
     """Carrega os dados dos arquivos CSV."""
     df_localidades = pd.read_csv("./csv/localidades_2022.csv", low_memory=False)
-    df_acidentes = pd.read_csv("./csv/acidentes_2022.csv", low_memory=False)
+    df_acidentes = pd.read_csv("./csv/localidades_2022.csv", low_memory=False)
     return df_localidades, df_acidentes
 
 
@@ -71,17 +73,11 @@ def gerar_acidentes_por_mil_veiculos(df_acidentes_por_cidade, df_localidades):
     )
     st.plotly_chart(fig)
 
-import streamlit as st
-import pandas as pd
-import plotly.express as px
-import seaborn as sns
-import matplotlib.pyplot as plt
-import numpy as np
 
 def carregar_dados():
     """Carrega os dados dos arquivos CSV."""
-    df_localidades = pd.read_csv("../localidades.csv", low_memory=False)
-    df_acidentes = pd.read_csv("../acidentes.csv", low_memory=False)
+    df_localidades = pd.read_csv("./csv/localidades_2022.csv", low_memory=False)
+    df_acidentes = pd.read_csv("./csv/acidentes_2022.csv", low_memory=False)
     return df_localidades, df_acidentes
 
 
@@ -152,8 +148,19 @@ def correlacao_variaveis(df_acidentes, df_localidades):
     st.pyplot()
 
 
+def dados_semanais(acidentes):
+    # Agrupandos os itens por data e somando o total de acidentes pela semana
+    return acidentes.\
+        groupby('dia_semana').\
+        size().\
+        reset_index(name='total_acidentes')
 
-
+def dados_meses(acidentes):
+    # Agrupandos os itens por data e somando o total de acidentes pela semana
+    return acidentes.\
+        groupby('mes_nome').\
+        size().\
+        reset_index(name='total_acidentes')
 
 
 if __name__ == "__main__":
@@ -182,28 +189,24 @@ if __name__ == "__main__":
 
     st.header("Top 5 Municípios com Mais Acidentes por 1.000 Veículos")
     gerar_acidentes_por_mil_veiculos(df_acidentes_por_cidade, df_localidades)
-    # Carregar os dados
-    df_localidades, df_acidentes = carregar_dados()
+ 
+    # Lista de dias da semana
+    time_options = ['Semanas', 'Meses']
 
-    # Título e seleção do estado
-    st.sidebar.title("🚦 Análise de Acidentes dos Estados Brasileiros")
-    estado = st.sidebar.selectbox(
-        "Selecione o estado", ["Todos os Estados"] + df_localidades['uf'].unique().tolist()
-    )
-
-    # Filtrar os dados conforme o estado
-    df_acidentes, df_localidades = filtrar_acidentes_por_estado(df_acidentes, df_localidades, estado)
-
-    # Distribuição Temporal dos Acidentes
-    st.header("Distribuição Temporal dos Acidentes")
-    periodo = st.selectbox("Selecione o intervalo:", ["mensal", "semanal"])
-    distribuicao_temporal(df_acidentes, periodo)
-
-    # Heatmap de acidentes por dia da semana e hora
-    st.header("Heatmap de Acidentes por Dia da Semana e Hora")
-    heatmap_acidentes(df_acidentes)
-
-    # Correlação entre Variáveis
-    st.header("Correlação entre Variáveis")
-    correlacao_variaveis(df_acidentes, df_localidades)
-
+    # Filtro com multiselect
+    dias_selecionados = st.selectbox("Filtrar por mês ou semana:", time_options, index=0)  # 0 é o primeiro item da lista
+    if dias_selecionados == "Semanas":
+        data = dados_semanais(df_acidentes)
+        st.write("Gráfico por Semanas")
+        # exemplo de gráfico
+        st.bar_chart(data)
+    elif dias_selecionados == "Meses":
+        data = dados_meses(df_acidentes)
+        print(data)
+        st.write("Gráfico por Meses")
+        # Criando o gráfico de barras
+        fig, ax = plt.subplots()
+        sns.barplot(x=data['mes_nome'], y=data['total_acidentes'], ax=ax)
+        ax.set_xlabel('Dia da Semana')  # Rótulo do eixo X
+        ax.set_ylabel('Total de Acidentes')  # Rótulo do eixo Y
+        st.pyplot(fig)
